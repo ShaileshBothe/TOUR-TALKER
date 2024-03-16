@@ -1,0 +1,87 @@
+import speech_recognition as sr
+import pyttsx3
+import os
+import openai
+from googletrans import Translator
+
+
+OPENAI_KEY = "Chat-gpt API key"
+
+openai.api_key = OPENAI_KEY
+
+def SpeakText(command):
+
+    engine = pyttsx3.init()
+    voices = engine.getProperty('voices')
+    engine.setProperty('voice', voices[2])
+    engine.setProperty('rate',180)
+    engine.say(command)
+    engine.runAndWait()
+
+r = sr.Recognizer()
+t= Translator()
+def record_text():
+
+    while True:
+        try:
+            with sr.Microphone() as source2:
+
+                r.adjust_for_ambient_noise(source2, duration=0.2)
+
+                print("I'm listening")
+
+                audio2 = r.listen(source2)
+
+                MyText = r.recognize_google(audio2, language='Hi-IN')
+
+                t.translate(MyText,dest='en')
+
+                return MyText
+            
+        except sr.RequestError as e:
+            print("Could not request results : {0}".format(e))
+
+
+        except sr.UnknownValueError:
+            print("Unknown error occurred")
+
+
+def send_to_chatGBT(messages, text):
+
+    response = openai.ChatCompletion.create(
+
+        model="gpt-3.5-turbo",
+        messages=messages,
+        max_tokens=100,
+        n=1,
+        stop=None,
+        temperature=0.5,
+
+    )
+
+
+    messages.append({"role": "user", "content": text})
+
+    messages.append({"role": "assistant", "content": response.choices[0].message.content})
+
+    return response.choices[0].message.content
+
+
+
+messages = [{"role": "user", "content": "You are an expert in traveling in India. I'd like to work as a travel assistant for me to suggest the best path to reach there and tell information about that place and give answers in hindi laguage"}]
+
+# SpeakText("नमस्ते मेरा नाम है आपकी बात। मुझे बताओ मैं आपके लिए क्या कर सकता हूँ")
+
+while True:
+
+    text = record_text()
+
+    response = send_to_chatGBT(messages, text)
+
+    SpeakText(response)
+
+    messages.append({"role": "user", "content": text})
+
+    messages.append({"role": "assistant", "content": response})
+    
+    print(response)
